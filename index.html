@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lee's Air — Lace Call Center</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f6f7f9; color:#1c2430; font-size:13px; }
+  header { padding:14px 18px; background:#0b1221; color:#fff; }
+  header h1 { margin:0; font-size:16px; font-weight:700; }
+  header .sub { opacity:.75; font-size:12px; margin-top:2px; }
+  .filters { display:flex; flex-wrap:wrap; gap:8px; align-items:end; padding:12px 18px; background:#fff; border-bottom:1px solid #e6e9ee; position:sticky; top:0; z-index:5; }
+  .filters label { display:flex; flex-direction:column; font-size:11px; color:#5b6673; gap:3px; }
+  .filters input, .filters select { padding:6px 8px; border:1px solid #cfd6df; border-radius:6px; font-size:13px; background:#fff; }
+  .filters input[type=text]{ min-width:180px; }
+  .filters button { padding:7px 14px; border:0; border-radius:6px; background:#2f6bff; color:#fff; font-weight:600; cursor:pointer; font-size:13px; }
+  .filters button.secondary { background:#eef1f5; color:#33415a; }
+  .bar { display:flex; justify-content:space-between; align-items:center; padding:8px 18px; color:#5b6673; font-size:12px; background:#fff; border-bottom:1px solid #eef1f5; }
+  .wrap { overflow:auto; max-height: calc(100vh - 190px); }
+  table { border-collapse:collapse; width:100%; background:#fff; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid #eef1f5; white-space:nowrap; vertical-align:top; }
+  th { position:sticky; top:0; background:#f0f2f6; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:#5b6673; z-index:2; }
+  tr:hover td { background:#f8fafc; cursor:pointer; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:600; }
+  .b-yes { background:#e3f6ea; color:#137a3f; } .b-no { background:#f2f4f7; color:#7a8698; }
+  .b-book{ background:#e3f0ff; color:#1b57c4; } .b-miss{ background:#fdeede; color:#b7791f; }
+  .obj { color:#8a5a00; font-size:11px; white-space:normal; max-width:220px; }
+  .reason { color:#5b6673; white-space:normal; max-width:220px; }
+  .pager { display:flex; gap:8px; align-items:center; }
+  .pager button { padding:6px 12px; border:1px solid #cfd6df; background:#fff; border-radius:6px; cursor:pointer; }
+  .pager button:disabled { opacity:.4; cursor:default; }
+  #msg { padding:16px 18px; color:#7a8698; }
+  .modal-bg { position:fixed; inset:0; background:rgba(10,15,25,.45); display:none; align-items:center; justify-content:center; z-index:20; padding:20px; }
+  .modal { background:#fff; border-radius:12px; max-width:760px; width:100%; max-height:82vh; display:flex; flex-direction:column; overflow:hidden; }
+  .modal h3 { margin:0; padding:14px 18px; border-bottom:1px solid #eef1f5; font-size:15px; }
+  .modal .meta { padding:8px 18px; color:#5b6673; font-size:12px; border-bottom:1px solid #f2f4f7; }
+  .modal .body { padding:16px 18px; overflow:auto; white-space:pre-wrap; line-height:1.5; }
+  .modal .close { float:right; cursor:pointer; color:#8a94a3; font-weight:700; }
+  /* gate */
+  #gate { position:fixed; inset:0; background:#0b1221; color:#fff; display:flex; align-items:center; justify-content:center; z-index:50; }
+  #gate .card { background:#131c2f; padding:28px 30px; border-radius:14px; width:340px; text-align:center; }
+  #gate h2 { margin:0 0 6px; font-size:18px; } #gate p { margin:0 0 16px; opacity:.7; font-size:13px; }
+  #gate input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #33415a; background:#0b1221; color:#fff; font-size:14px; }
+  #gate button { width:100%; margin-top:10px; padding:10px; border:0; border-radius:8px; background:#2f6bff; color:#fff; font-weight:700; cursor:pointer; }
+  #gate .err { color:#ff8a8a; font-size:12px; margin-top:8px; min-height:14px; }
+  .app { display:none; }
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="card">
+    <h2>Lee's Air — Call Center</h2>
+    <p>Enter the access password</p>
+    <input type="password" id="pw" placeholder="Password" autofocus>
+    <button id="enter">View dashboard</button>
+    <div class="err" id="gerr"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+<header>
+  <h1>Lee's Air — Lace Call Center</h1>
+  <div class="sub" id="sub">Live · click any row to read the transcript</div>
+</header>
+<div class="filters">
+  <label>From<input type="date" id="from"></label>
+  <label>To<input type="date" id="to"></label>
+  <label>Location<select id="loc"><option value="">All</option></select></label>
+  <label>Direction<select id="dir"><option value="">All</option><option value="INBOUND">Inbound</option><option value="OUTBOUND">Outbound</option></select></label>
+  <label>Outcome<select id="outcome"><option value="">All</option><option value="booked">Booked</option><option value="missed">Qualified, not booked</option><option value="nq">Not qualified</option></select></label>
+  <label>Search (agent / customer / campaign)<input type="text" id="q" placeholder="type and Apply"></label>
+  <button id="apply">Apply</button>
+  <button id="reset" class="secondary">Reset</button>
+</div>
+<div class="bar">
+  <span id="count">Loading…</span>
+  <span class="pager"><button id="prev">‹ Prev</button><span id="page">Page 1</span><button id="next">Next ›</button></span>
+</div>
+<div class="wrap">
+  <table>
+    <thead><tr>
+      <th>Date / Time (PT)</th><th>Location</th><th>Agent</th><th>Dir</th><th>Campaign</th>
+      <th>Customer</th><th>Phone</th><th>Dur</th><th>Qualified</th><th>Booked</th>
+      <th>Outcome</th><th>Reason not converted</th><th>Objections</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+<div id="msg"></div>
+</div>
+
+<div class="modal-bg" id="modalbg">
+  <div class="modal">
+    <h3><span class="close" id="close">✕</span>Transcript</h3>
+    <div class="meta" id="mmeta"></div>
+    <div class="body" id="mbody"></div>
+  </div>
+</div>
+
+<script>
+const API = "https://dzywdtlzrwytfdqjkcxo.supabase.co/functions/v1/lace-dashboard-api";
+const PAGE = 50;
+let pw = "", page = 0;
+
+async function api(body){
+  const r = await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ password: pw, ...body }) });
+  const j = await r.json();
+  if (r.status === 403){ showGate("Wrong password."); throw new Error("unauthorized"); }
+  if (!r.ok) throw new Error(j.error || ("HTTP "+r.status));
+  return j;
+}
+function showGate(err){ document.getElementById("gate").style.display="flex"; document.getElementById("app").style.display="none"; document.getElementById("gerr").textContent = err||""; }
+function hideGate(){ document.getElementById("gate").style.display="none"; document.getElementById("app").style.display="block"; }
+
+function esc(h){ return String(h==null?"":h).replace(/</g,"&lt;"); }
+function fmtDur(s){ if(s==null) return ""; const m=Math.floor(s/60), ss=String(s%60).padStart(2,"0"); return m+":"+ss; }
+function fmtDt(s){ if(!s) return ""; const d=new Date(String(s).replace(" ","T")); return d.toLocaleString("en-US",{timeZone:"America/Los_Angeles",month:"numeric",day:"numeric",year:"2-digit",hour:"numeric",minute:"2-digit"}); }
+function outcomeBadge(r){ if(r.is_booked) return '<span class="badge b-book">Booked</span>'; if(r.qualification_resolution==="MISSED"||(r.is_qualified&&!r.is_booked)) return '<span class="badge b-miss">Missed</span>'; return '<span class="badge b-no">'+esc(r.qualification_resolution||"—")+'</span>'; }
+function filters(){ return { from:val("from"), to:val("to"), location:val("loc"), direction:val("dir"), outcome:val("outcome"), search:val("q").trim() }; }
+function val(id){ return document.getElementById(id).value; }
+
+async function load(){
+  const rowsEl=document.getElementById("rows"); document.getElementById("msg").textContent="";
+  rowsEl.innerHTML='<tr><td colspan="13" style="padding:16px;color:#7a8698">Loading…</td></tr>';
+  try {
+    const j = await api({ action:"list", filters:filters(), limit:PAGE, offset:page*PAGE });
+    const rows = j.rows||[];
+    if(!rows.length){ rowsEl.innerHTML='<tr><td colspan="13" style="padding:16px;color:#7a8698">No calls match these filters.</td></tr>'; }
+    else {
+      rowsEl.innerHTML = rows.map(function(r){
+        const objs = Array.isArray(r.objection_categories)? r.objection_categories.join(", "):"";
+        return '<tr data-id="'+r.call_id+'">'+
+          "<td>"+fmtDt(r.moment_received_utc)+"</td>"+
+          "<td>"+esc(r.company_name)+"</td><td>"+esc(r.agent_name)+"</td>"+
+          "<td>"+(r.direction==="INBOUND"?"In":"Out")+"</td>"+
+          "<td>"+esc(r.campaign)+"</td><td>"+esc(r.customer_name)+"</td>"+
+          "<td>"+esc(r.customer_phone_number)+"</td><td>"+fmtDur(r.duration_sec)+"</td>"+
+          "<td>"+(r.is_qualified?'<span class="badge b-yes">Yes</span>':'<span class="badge b-no">No</span>')+"</td>"+
+          "<td>"+(r.is_booked?'<span class="badge b-yes">Yes</span>':'<span class="badge b-no">No</span>')+"</td>"+
+          "<td>"+outcomeBadge(r)+"</td>"+
+          '<td class="reason">'+esc(r.reason_not_converted)+"</td>"+
+          '<td class="obj">'+esc(objs)+"</td></tr>";
+      }).join("");
+      Array.prototype.forEach.call(rowsEl.querySelectorAll("tr"), function(tr){ tr.onclick=function(){ openTranscript(tr.dataset.id, rows.find(function(x){return x.call_id===tr.dataset.id;})); }; });
+    }
+    document.getElementById("next").disabled = rows.length < PAGE;
+    document.getElementById("prev").disabled = page===0;
+    document.getElementById("page").textContent = "Page "+(page+1);
+    if (j.total!=null) document.getElementById("count").textContent = Number(j.total).toLocaleString()+" calls"+(Object.values(filters()).some(Boolean)?" (filtered)":"");
+  } catch(e){ if(e.message!=="unauthorized"){ rowsEl.innerHTML=""; document.getElementById("msg").textContent="Error: "+e.message; } }
+}
+async function openTranscript(id, row){
+  document.getElementById("modalbg").style.display="flex";
+  document.getElementById("mmeta").textContent = row? (fmtDt(row.moment_received_utc)+" · "+row.company_name+" · "+row.agent_name+" · "+(row.campaign||"")) : ("Call "+id);
+  document.getElementById("mbody").textContent="Loading transcript…";
+  try { const j=await api({ action:"transcript", call_id:id }); document.getElementById("mbody").textContent = j.full_text||"(empty)"; }
+  catch(e){ if(e.message!=="unauthorized") document.getElementById("mbody").textContent="Error: "+e.message; }
+}
+async function loadMeta(){
+  try { const j=await api({ action:"meta" }); const sel=document.getElementById("loc");
+    (j.locations||[]).forEach(function(l){ const o=document.createElement("option"); o.value=l; o.textContent=l; sel.appendChild(o); });
+  } catch(e){}
+}
+async function start(){ hideGate(); await loadMeta(); await load(); }
+
+document.getElementById("enter").onclick=function(){ pw=document.getElementById("pw").value; page=0; start(); };
+document.getElementById("pw").addEventListener("keydown",function(e){ if(e.key==="Enter"){ pw=this.value; page=0; start(); } });
+document.getElementById("apply").onclick=function(){ page=0; load(); };
+document.getElementById("reset").onclick=function(){ ["from","to","q"].forEach(function(i){document.getElementById(i).value="";}); ["loc","dir","outcome"].forEach(function(i){document.getElementById(i).value="";}); page=0; load(); };
+document.getElementById("next").onclick=function(){ page++; load(); };
+document.getElementById("prev").onclick=function(){ if(page>0){ page--; load(); } };
+document.getElementById("close").onclick=function(){ document.getElementById("modalbg").style.display="none"; };
+document.getElementById("modalbg").onclick=function(e){ if(e.target.id==="modalbg") document.getElementById("modalbg").style.display="none"; };
+</script>
+</body>
+</html>
